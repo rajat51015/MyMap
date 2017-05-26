@@ -12,6 +12,8 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.media.MediaPlayer;
+import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
@@ -34,8 +36,8 @@ import java.util.List;
 import static android.support.v7.appcompat.R.id.time;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
-LatLng l,m;Double b,c=130.1;Double d,g;Double dd=0.0;
-    private GoogleMap mMap;Button bb,bb1,bb2;
+LatLng l,m;public double b,c=1.1;double d,g;double dd=0.0;
+    private GoogleMap mMap;Button bb,bb1,bb2;private MediaPlayer media;Button bh;
 AlarmManager alarm;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +48,7 @@ AlarmManager alarm;
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         bb = (Button) findViewById(R.id.button3);
-
+bh=(Button)findViewById(R.id.button4);
 
 //GPS POSITION
         bb.setOnClickListener(new View.OnClickListener() {
@@ -76,61 +78,74 @@ AlarmManager alarm;
             // for ActivityCompat#requestPermissions for more details.
 
         }
-        if (m.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-            m.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, new LocationListener() {
-                @Override
-                public void onLocationChanged(Location location) {
-                    double lat = location.getLatitude();
-                    double lon = location.getLongitude();
-                    LatLng l = new LatLng(lat, lon);
-                    d=l.latitude;
-                    g=l.longitude;
-                    Geocoder geocoder = new Geocoder(getApplicationContext());
-                    try {
-                        List<Address> ad = geocoder.getFromLocation(lat, lon, 1);
-                        String c1 = ad.get(0).getCountryName();
-                        String d1 = ad.get(0).getLocality();
-                        mMap.addMarker(new MarkerOptions().position(l).title(d1));
-                        mMap.moveCamera(CameraUpdateFactory.newLatLng(l));
-                        pointToPosition(l);
-                       //  dd=distance(b,c,b,c);
-                        Intent i=getIntent();
-                        Bundle e=i.getExtras();
-                     //   String f=e.getString("key");Double bn=Double.parseDouble(f);
-                        if(dd<=5)
-                        {int time=10*1000;
-                            Intent intent=new Intent(MapsActivity.this,Alarm.class);
-                            alarm = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-                            PendingIntent pIntent = PendingIntent.getBroadcast(MapsActivity.this, 0, intent, 0);
-                            alarm.setRepeating(AlarmManager.RTC_WAKEUP, time, time, pIntent);
-
-
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-
-                }
-
-                @Override
-                public void onStatusChanged(String provider, int status, Bundle extras) {
-
-                }
-
-                @Override
-                public void onProviderEnabled(String provider) {
-
-                }
-
-                @Override
-                public void onProviderDisabled(String provider) {
-
-                }
-            });
-
-
-        } else if (m.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+//        if (m.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+//            m.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, new LocationListener() {
+//                @Override
+//                public void onLocationChanged(Location location) {
+//                    double lat = location.getLatitude();
+//                    double lon = location.getLongitude();
+//                    LatLng l = new LatLng(lat, lon);
+//                    d=l.latitude;
+//                    g=l.longitude;
+//
+//                    Geocoder geocoder = new Geocoder(getApplicationContext());
+//                    try {
+//                        List<Address> ad = geocoder.getFromLocation(lat, lon, 1);
+//                        String c1 = ad.get(0).getCountryName();
+//                        dd=distance(d,g,b,c);
+//                        String d1 = ad.get(0).getLocality();
+//                        mMap.addMarker(new MarkerOptions().position(l).title(d1));
+//                        mMap.moveCamera(CameraUpdateFactory.newLatLng(l));
+//                        pointToPosition(l);
+//
+//                        Intent i=getIntent();
+//                        Bundle e=i.getExtras();
+//                     //   String f=e.getString("key");Double bn=Double.parseDouble(f);
+//                        if(dd<=100.0)
+//
+//                        {
+//                              media=MediaPlayer.create(MapsActivity.this,R.raw.dev);
+//                            media.start();
+//                            bh.setOnClickListener(new View.OnClickListener() {
+//                                @Override
+//                                public void onClick(View v) {
+//                                    media.stop();
+//                                }
+//                            });
+//                          /*  int time=10*1000;
+//                            Intent intent=new Intent(MapsActivity.this,Alarm.class);
+//                            alarm = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+//                            PendingIntent pIntent = PendingIntent.getBroadcast(MapsActivity.this, 0, intent, 0);
+//                            alarm.setRepeating(AlarmManager.RTC_WAKEUP, time, time, pIntent);
+//*/
+//
+//                        }
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//
+//
+//                }
+//
+//                @Override
+//                public void onStatusChanged(String provider, int status, Bundle extras) {
+//
+//                }
+//
+//                @Override
+//                public void onProviderEnabled(String provider) {
+//
+//                }
+//
+//                @Override
+//                public void onProviderDisabled(String provider) {
+//
+//                }
+//            });
+//
+//
+//        }
+        if (m.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             m.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, new LocationListener() {
                 @Override
                 public void onLocationChanged(Location location) {
@@ -147,17 +162,27 @@ AlarmManager alarm;
                         mMap.addMarker(new MarkerOptions().position(l).title(d1));
                         mMap.moveCamera(CameraUpdateFactory.newLatLng(l));
                         pointToPosition(l);
-                        // dd=distance(b,c,b,c);
+                        if(l==null)
+                        {dd=distance(d,g,1.1,1.1);}
+                        else if(l!=null)
+                        {dd=distance(d,g,b,c);}
                         Intent i=getIntent();
                         Bundle e=i.getExtras();
                        // String f=e.getString("key");Double bn=Double.parseDouble(f);
-                        if(dd<=5)
-                        {
-                            Intent intent=new Intent(MapsActivity.this,Alarm.class);
+                        if(dd<=100.0)
+                        {  media=MediaPlayer.create(MapsActivity.this,R.raw.dev);
+                            media.start();
+                            bh.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    media.stop();
+                                }
+                            });
+                          /*  Intent intent=new Intent(MapsActivity.this,Alarm.class);
                             PendingIntent pp= PendingIntent.getBroadcast(MapsActivity.this,256487,intent,0);
                             AlarmManager alarmManager=(AlarmManager)getSystemService(ALARM_SERVICE);
                             alarmManager.set(AlarmManager.RTC_WAKEUP,System.currentTimeMillis()+(2*1000),pp);
-                        }
+                        */}
 
                     } catch (IOException e) {
                         e.printStackTrace();
