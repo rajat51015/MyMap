@@ -13,6 +13,8 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.media.MediaPlayer;
+import android.os.CountDownTimer;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
@@ -36,9 +38,16 @@ import java.util.List;
 import static android.support.v7.appcompat.R.id.time;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
-LatLng l,m;public double b,c=1.1;double d,g;double dd=0.0;
-    private GoogleMap mMap;Button bb,bb1,bb2;private MediaPlayer media;Button bh;
-AlarmManager alarm;
+    LatLng l, m;
+    public double b, c = 1.1;
+    double d, g;
+    double dd = 0.0;
+    private GoogleMap mMap;
+    Button bb, bb1, bb2;
+    private MediaPlayer media;
+    Button bh;
+    AlarmManager alarm;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,23 +57,31 @@ AlarmManager alarm;
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
         bb = (Button) findViewById(R.id.button3);
-bh=(Button)findViewById(R.id.button4);
+        bh = (Button) findViewById(R.id.button4);
 
 //GPS POSITION
         bb.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-            l=    onSearch(v);
-                b=l.latitude;
-                c=l.longitude;
+                l = onSearch(v);
+                b = l.latitude;
+                c = l.longitude;
 
 
             }
         });
-
-
-
-
+        bh.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                media.pause();
+            }
+        });
+        final Runnable stopPlayerTask = new Runnable() {
+            @Override
+            public void run() {
+                media.stop();
+            }
+        };
 
 
         LocationManager m = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -78,73 +95,87 @@ bh=(Button)findViewById(R.id.button4);
             // for ActivityCompat#requestPermissions for more details.
 
         }
-//        if (m.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-//            m.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, new LocationListener() {
-//                @Override
-//                public void onLocationChanged(Location location) {
-//                    double lat = location.getLatitude();
-//                    double lon = location.getLongitude();
-//                    LatLng l = new LatLng(lat, lon);
-//                    d=l.latitude;
-//                    g=l.longitude;
-//
-//                    Geocoder geocoder = new Geocoder(getApplicationContext());
-//                    try {
-//                        List<Address> ad = geocoder.getFromLocation(lat, lon, 1);
-//                        String c1 = ad.get(0).getCountryName();
-//                        dd=distance(d,g,b,c);
-//                        String d1 = ad.get(0).getLocality();
-//                        mMap.addMarker(new MarkerOptions().position(l).title(d1));
-//                        mMap.moveCamera(CameraUpdateFactory.newLatLng(l));
-//                        pointToPosition(l);
-//
-//                        Intent i=getIntent();
-//                        Bundle e=i.getExtras();
-//                     //   String f=e.getString("key");Double bn=Double.parseDouble(f);
-//                        if(dd<=100.0)
-//
-//                        {
-//                              media=MediaPlayer.create(MapsActivity.this,R.raw.dev);
-//                            media.start();
-//                            bh.setOnClickListener(new View.OnClickListener() {
-//                                @Override
-//                                public void onClick(View v) {
-//                                    media.stop();
-//                                }
-//                            });
-//                          /*  int time=10*1000;
-//                            Intent intent=new Intent(MapsActivity.this,Alarm.class);
-//                            alarm = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-//                            PendingIntent pIntent = PendingIntent.getBroadcast(MapsActivity.this, 0, intent, 0);
-//                            alarm.setRepeating(AlarmManager.RTC_WAKEUP, time, time, pIntent);
-//*/
-//
-//                        }
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//
-//
-//                }
-//
-//                @Override
-//                public void onStatusChanged(String provider, int status, Bundle extras) {
-//
-//                }
-//
-//                @Override
-//                public void onProviderEnabled(String provider) {
-//
-//                }
-//
-//                @Override
-//                public void onProviderDisabled(String provider) {
-//
-//                }
-//            });
-//
-//
-//        }
+        if (m.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+            m.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, new LocationListener() {
+                @Override
+                public void onLocationChanged(Location location) {
+                    double lat = location.getLatitude();
+                    double lon = location.getLongitude();
+                    LatLng l = new LatLng(lat, lon);
+                    d = l.latitude;
+                    g = l.longitude;
+
+                    Geocoder geocoder = new Geocoder(getApplicationContext());
+                    try {
+                        List<Address> ad = geocoder.getFromLocation(lat, lon, 1);
+                        String c1 = ad.get(0).getCountryName();
+                        if (l == null) {
+                            dd = distance(d, g, 1.1, 1.1);
+                        } else if (l != null) {
+                            dd = distance(d, g, b, c);
+                        }
+                        String d1 = ad.get(0).getLocality();
+                        mMap.addMarker(new MarkerOptions().position(l).title(d1));
+                        mMap.moveCamera(CameraUpdateFactory.newLatLng(l));
+                        pointToPosition(l);
+
+                        Intent i = getIntent();
+                        Bundle e = i.getExtras();
+                        String f = e.getString("key");
+                        double bn = Double.parseDouble(f);
+                        if (dd <= bn)
+
+                        {
+                            media = MediaPlayer.create(MapsActivity.this, R.raw.dev);
+                            media.start();
+                            Handler handler = new Handler();
+                            handler.postDelayed(stopPlayerTask, 5000);
+                            CountDownTimer cntr_aCounter = new CountDownTimer(3000, 1000) {
+                                public void onTick(long millisUntilFinished) {
+
+                                    media.start();
+                                }
+
+                                public void onFinish() {
+                                    //code fire after finish
+                                    media.stop();
+                                }
+                            };
+                            cntr_aCounter.start();
+
+                          /*  int time=10*1000;
+                            Intent intent=new Intent(MapsActivity.this,Alarm.class);
+                            alarm = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                            PendingIntent pIntent = PendingIntent.getBroadcast(MapsActivity.this, 0, intent, 0);
+                            alarm.setRepeating(AlarmManager.RTC_WAKEUP, time, time, pIntent);
+*/
+
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+
+                }
+
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {
+
+                }
+
+                @Override
+                public void onProviderEnabled(String provider) {
+
+                }
+
+                @Override
+                public void onProviderDisabled(String provider) {
+
+                }
+            });
+
+
+        }
         if (m.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             m.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, new LocationListener() {
                 @Override
@@ -152,8 +183,8 @@ bh=(Button)findViewById(R.id.button4);
                     double lat = location.getLatitude();
                     double lon = location.getLongitude();
                     LatLng l = new LatLng(lat, lon);
-                    d=l.latitude;
-                    g=l.longitude;
+                    d = l.latitude;
+                    g = l.longitude;
                     Geocoder geocoder = new Geocoder(getApplicationContext());
                     try {
                         List<Address> ad = geocoder.getFromLocation(lat, lon, 1);
@@ -162,27 +193,39 @@ bh=(Button)findViewById(R.id.button4);
                         mMap.addMarker(new MarkerOptions().position(l).title(d1));
                         mMap.moveCamera(CameraUpdateFactory.newLatLng(l));
                         pointToPosition(l);
-                        if(l==null)
-                        {dd=distance(d,g,1.1,1.1);}
-                        else if(l!=null)
-                        {dd=distance(d,g,b,c);}
-                        Intent i=getIntent();
-                        Bundle e=i.getExtras();
-                       // String f=e.getString("key");Double bn=Double.parseDouble(f);
-                        if(dd<=100.0)
-                        {  media=MediaPlayer.create(MapsActivity.this,R.raw.dev);
+                        if (l == null) {
+                            dd = distance(d, g, 1.1, 1.1);
+                        } else if (l != null) {
+                            dd = distance(d, g, b, c);
+                        }
+                        Intent i = getIntent();
+                        Bundle e = i.getExtras();
+                        String f = e.getString("key");
+                        double bn = Double.parseDouble(f);
+                        if (dd <= bn) {
+                            media = MediaPlayer.create(MapsActivity.this, R.raw.dev);
                             media.start();
-                            bh.setOnClickListener(new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
+                            Handler handler = new Handler();
+                            handler.postDelayed(stopPlayerTask, 5000);
+                            CountDownTimer cntr_aCounter = new CountDownTimer(3000, 1000) {
+                                public void onTick(long millisUntilFinished) {
+
+                                    media.start();
+                                }
+
+                                public void onFinish() {
+                                    //code fire after finish
                                     media.stop();
                                 }
-                            });
+                            };
+                            cntr_aCounter.start();
+
                           /*  Intent intent=new Intent(MapsActivity.this,Alarm.class);
                             PendingIntent pp= PendingIntent.getBroadcast(MapsActivity.this,256487,intent,0);
                             AlarmManager alarmManager=(AlarmManager)getSystemService(ALARM_SERVICE);
                             alarmManager.set(AlarmManager.RTC_WAKEUP,System.currentTimeMillis()+(2*1000),pp);
-                        */}
+                        */
+                        }
 
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -215,7 +258,6 @@ bh=(Button)findViewById(R.id.button4);
     }
 
 
-
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -234,6 +276,7 @@ bh=(Button)findViewById(R.id.button4);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));*/
     }
+
     private void pointToPosition(LatLng position) {
         //Build camera position
         CameraPosition cameraPosition = new CameraPosition.Builder()
@@ -243,30 +286,30 @@ bh=(Button)findViewById(R.id.button4);
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
     }
 
-    public LatLng onSearch(View v){
-        LatLng ll=null;
-        EditText e=(EditText) findViewById(R.id.textView2);
+    public LatLng onSearch(View v) {
+        LatLng ll = null;
+        EditText e = (EditText) findViewById(R.id.textView2);
 
-        List<Address> addresses=null;
-String loc=e.getText().toString();
-        if(loc!=null || loc!="")
-        {
-            Geocoder g=new Geocoder(this);
+        List<Address> addresses = null;
+        String loc = e.getText().toString();
+        if (loc != null || loc != "") {
+            Geocoder g = new Geocoder(this);
             try {
-                addresses=g.getFromLocationName(loc,1);
+                addresses = g.getFromLocationName(loc, 1);
             } catch (IOException e1) {
                 e1.printStackTrace();
             }
 
-Address address= addresses.get(0);
-             ll=new LatLng(address.getLatitude(),address.getLongitude());
+            Address address = addresses.get(0);
+            ll = new LatLng(address.getLatitude(), address.getLongitude());
             mMap.addMarker(new MarkerOptions().position(ll).title(loc));
             mMap.moveCamera(CameraUpdateFactory.newLatLng(ll));
             pointToPosition(ll);
 
         }
-return ll;
+        return ll;
     }
+
     public double distance(double lat1, double lon1, double lat2, double lon2) {
         double theta = lon1 - lon2;
         double dist = Math.sin(deg2rad(lat1))
@@ -287,4 +330,5 @@ return ll;
     public double rad2deg(double rad) {
         return (rad * 180.0 / Math.PI);
     }
+
 }
